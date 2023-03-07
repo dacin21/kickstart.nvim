@@ -116,7 +116,7 @@ require('lazy').setup({
     '/NLKNguyen/papercolor-theme',
     priority = 1000,
     config = function()
-      vim.cmd.colorscheme 'PaperColor'
+      -- vim.cmd.colorscheme 'PaperColor' -- doesn't work here?
       vim.cmd.set 'background=light'
     end,
   },
@@ -230,6 +230,20 @@ vim.o.completeopt = 'menuone,noselect'
 
 -- NOTE: You should make sure your terminal supports this
 vim.o.termguicolors = true
+
+-- #### Custom options
+-- set theme (didn't work at the top)
+vim.cmd.colorscheme 'PaperColor'
+-- tab = 4 spaces
+vim.o.tabstop = 4
+vim.o.softtabstop = 0
+vim.o.expandtab = true
+vim.o.shiftwidth = 4
+vim.o.smarttab = true
+-- except in make files
+vim.cmd.filetype('on')
+vim.cmd.filetype('plugin on')
+vim.cmd('autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=0')
 
 -- [[ Basic Keymaps ]]
 
@@ -467,7 +481,7 @@ cmp.setup {
     ['<C-Space>'] = cmp.mapping.complete {},
     ['<CR>'] = cmp.mapping.confirm {
       behavior = cmp.ConfirmBehavior.Replace,
-      select = true,
+      -- select = true, -- use <CR> for newline and <Tab><CR> for first autocomplet suggest.
     },
     ['<Tab>'] = cmp.mapping(function(fallback)
       if cmp.visible() then
