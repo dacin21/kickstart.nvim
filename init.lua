@@ -236,12 +236,18 @@ vim.o.termguicolors = true
 -- set theme (didn't work at the top)
 vim.cmd.colorscheme 'PaperColor'
 -- tab = 4 spaces
-vim.o.tabstop = 4
-vim.o.softtabstop = 0
-vim.o.expandtab = true
-vim.o.shiftwidth = 4
-vim.o.smarttab = true
--- except in make files
+vim.api.nvim_create_user_command('Fourtab',
+  function(opts)
+    vim.o.tabstop = 4
+    vim.o.softtabstop = 0
+    vim.o.expandtab = true
+    vim.o.shiftwidth = 4
+    vim.o.smarttab = true
+  end,
+  { nargs = 0 })
+-- this sometimes gets overriden by one of the plugin -- you can manually call :Fourtab
+vim.cmd.Fourtab()
+-- make files need tabs not spaces.
 vim.cmd.filetype('on')
 vim.cmd.filetype('plugin on')
 vim.cmd('autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=0')
