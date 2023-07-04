@@ -300,6 +300,49 @@ vim.keymap.set('n', '<leader>/', function()
   })
 end, { desc = '[/] Fuzzily search in current buffer' })
 
+-- execute build command from first line of file
+local get_log_buffer = function()
+  -- https://github.com/nvim-neo-tree/neo-tree.nvim/blob/e968cda658089b56ee1eaa1772a2a0e50113b902/lua/neo-tree/utils.lua#L157-L165
+  local name = '__log_buffer'
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local buf_name = vim.api.nvim_buf_get_name(buf)
+    if string.sub(buf_name, -#name) == name then
+      -- todo: force buffer to be listed in :buffers (the user might have closed it with :bd)
+      return buf
+    end
+  end
+  local log_buffer = vim.api.nvim_create_buf(true, true)
+  vim.api.nvim_buf_set_name(log_buffer, name)
+  return log_buffer
+end
+local run_build_command = function()
+  local first_line = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
+  vim.cmd.w() -- building should save changes first
+  local build_command = string.match(first_line, 'BUILD_COMMAND +(.*)$')
+
+  local log_buffer = get_log_buffer()
+  local with_log_buffer = function(fun) vim.api.nvim_buf_call(log_buffer, fun) end
+  local append_to_buffer = function(data_list)
+    with_log_buffer(function()
+      vim.cmd('norm! G$') -- move cursor to end of buffer
+      vim.api.nvim_put(data_list, 'c', false, true)
+    end)
+  end
+
+  -- clear the log buffer
+  with_log_buffer(function() vim.cmd('norm!gg"_dG') end)
+  append_to_buffer({'running: ' .. build_command, ''})
+  -- run build in background, write log
+  vim.fn.jobstart(build_command, {
+    on_stdout = function(_, data)
+      append_to_buffer(data)
+    end,
+    on_stderr = function(_, data)
+      append_to_buffer(data)
+    end
+    })
+end
+vim.keymap.set('n', '<leader>b', run_build_command, { desc = '[B]uild current buffer' })
 vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
 vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
 vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
@@ -444,6 +487,13 @@ local servers = {
       telemetry = { enable = false },
     },
   },
+  pylsp = {
+    plugins = {
+      pycodestyle = { maxLineLength = 999, ignore={'E501'} },
+      flake8 = { enabled = true, maxLineLength=999, ignore = {'E501'} },
+      plugins = { rope_completion = { enabled = true } },
+    },
+  }
 }
 
 -- Setup neovim lua configuration
