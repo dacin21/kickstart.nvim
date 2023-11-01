@@ -84,7 +84,7 @@ require('lazy').setup({
 
       -- Useful status updates for LSP
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-      { 'j-hui/fidget.nvim', opts = {} },
+      { 'j-hui/fidget.nvim', tag = 'legacy', opts = {} },
 
       -- Additional lua configuration, makes nvim stuff amazing!
       'folke/neodev.nvim',
@@ -319,6 +319,7 @@ local run_build_command = function()
   local first_line = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1]
   vim.cmd.w() -- building should save changes first
   local build_command = string.match(first_line, 'BUILD_COMMAND +(.*)$')
+  if not build_command then return end
 
   local log_buffer = get_log_buffer()
   local with_log_buffer = function(fun) vim.api.nvim_buf_call(log_buffer, fun) end
@@ -473,7 +474,7 @@ end
 --  the `settings` field of the server config. You must look up that documentation yourself.
 local servers = {
   clangd = {
-    cmd = { 'clangd' },
+    cmd = { 'clangd', '--completion-style=detailed' },
     -- cmd = { 'clangd', '--log=verbose' },
   },
   -- gopls = {},
@@ -488,11 +489,13 @@ local servers = {
     },
   },
   pylsp = {
-    plugins = {
-      pycodestyle = { maxLineLength = 999, ignore={'E501'} },
-      flake8 = { enabled = true, maxLineLength=999, ignore = {'E501'} },
-      plugins = { rope_completion = { enabled = true } },
-    },
+    pylsp = {
+      plugins = {
+        pycodestyle = { maxLineLength = 999, ignore={'E501'} },
+        flake8 = { enabled = true, maxLineLength=999, ignore = {'E501'} },
+        plugins = { rope_completion = { enabled = true } },
+      },
+    }
   }
 }
 
