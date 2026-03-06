@@ -151,13 +151,21 @@ require('lazy').setup({
       end,
     },
   },
+  
+  {
+    'echasnovski/mini.nvim',
+    version = '*',
+  },
 
   { -- Theme inspired by Atom
-    '/NLKNguyen/papercolor-theme',
+    'pappasam/papercolor-theme-slim',
     priority = 1000,
     config = function()
-      -- vim.cmd.colorscheme 'PaperColor' -- doesn't work here?
-      vim.cmd.set 'background=light'
+      -- get rid of terminal borders
+      require('mini.misc').setup_termbg_sync()
+      vim.cmd.colorscheme 'PaperColorSlimLight' -- doesn't work here?
+      -- vim.cmd.set 'background=light'
+      vim.cmd.set 'winborder=rounded'
     end,
   },
 
@@ -276,7 +284,7 @@ vim.o.termguicolors = true
 
 -- #### Custom options
 -- set theme (didn't work at the top)
-vim.cmd.colorscheme 'PaperColor'
+vim.cmd.colorscheme 'PaperColorSlimLight'
 -- tab = 4 spaces
 vim.api.nvim_create_user_command('Fourtab',
   function(opts)
@@ -552,41 +560,29 @@ local on_attach = function(_, bufnr)
 end
 
 -- document existing key chains
-require('which-key').register {
-  ['<leader>c'] = { name = '[C]ode', _ = 'which_key_ignore' },
-  ['<leader>d'] = { name = '[D]ocument', _ = 'which_key_ignore' },
-  ['<leader>g'] = { name = '[G]it', _ = 'which_key_ignore' },
-  ['<leader>h'] = { name = 'More git', _ = 'which_key_ignore' },
-  ['<leader>r'] = { name = '[R]ename', _ = 'which_key_ignore' },
-  ['<leader>s'] = { name = '[S]earch', _ = 'which_key_ignore' },
-  ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
-}
+require('which-key').add ({
+  { "<leader>c", group = "[C]ode" },
+  { "<leader>c_", hidden = true },
+  { "<leader>d", group = "[D]ocument" },
+  { "<leader>d_", hidden = true },
+  { "<leader>g", group = "[G]it" },
+  { "<leader>g_", hidden = true },
+  { "<leader>h", group = "More git" },
+  { "<leader>h_", hidden = true },
+  { "<leader>r", group = "[R]ename" },
+  { "<leader>r_", hidden = true },
+  { "<leader>s", group = "[S]earch" },
+  { "<leader>s_", hidden = true },
+  { "<leader>w", group = "[W]orkspace" },
+  { "<leader>w_", hidden = true },
+})
 
--- mason-lspconfig requires that these setup functions are called in this order
--- before setting up the servers.
-require('mason').setup()
-require('mason-lspconfig').setup()
 
--- Enable the following language servers
---  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
---
---  Add any additional override configuration in the following tables. They will be passed to
---  the `settings` field of the server config. You must look up that documentation yourself.
---
---  If you want to override the default filetypes that your language server will attach to you can
---  define the property 'filetypes' to the map in question.
-local servers = {
-  clangd = {
-    cmd = { 'clangd', '--completion-style=detailed' },
-    -- cmd = { 'clangd', '--log=verbose' },
-  },
-  -- gopls = {},
-  -- pyright = {},
-  -- rust_analyzer = {},
-  -- tsserver = {},
-  -- html = { filetypes = { 'html', 'twig', 'hbs'} },
-
-  lua_ls = {
+vim.lsp.config('clangd', {
+  cmd = { 'clangd', '--completion-style=detailed' },
+})
+vim.lsp.config('lua_ls', {
+  settings = {
     Lua = {
       workspace = { checkThirdParty = false },
       telemetry = { enable = false },
@@ -594,7 +590,9 @@ local servers = {
       -- diagnostics = { disable = { 'missing-fields' } },
     },
   },
-  pylsp = {
+})
+vim.lsp.config('pylsp', {
+  settings = {
     pylsp = {
       plugins = {
         pycodestyle = { maxLineLength = 999, ignore={'E501'} },
@@ -602,8 +600,16 @@ local servers = {
         plugins = { rope_completion = { enabled = true } },
       },
     }
-  }
-}
+  },
+})
+-- mason-lspconfig requires that these setup functions are called in this order
+-- before setting up the servers.
+require('mason').setup()
+
+-- Enable the following language servers
+-- Updated to https://github.com/mason-org/mason-lspconfig.nvim/releases/tag/v2.0.0
+
+
 
 -- Setup neovim lua configuration
 require('neodev').setup()
@@ -614,11 +620,11 @@ capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
 
 -- Ensure the servers above are installed
 local mason_lspconfig = require 'mason-lspconfig'
-
-mason_lspconfig.setup {
-  ensure_installed = vim.tbl_keys(servers),
+require("mason-lspconfig").setup {
+  ensure_installed = { "clangd", "lua_ls", "pylsp" }
 }
 
+--[[
 mason_lspconfig.setup_handlers {
   function(server_name)
     require('lspconfig')[server_name].setup {
@@ -630,6 +636,7 @@ mason_lspconfig.setup_handlers {
     }
   end,
 }
+]]--
 
 -- [[ Configure nvim-cmp ]]
 -- See `:help cmp`
@@ -681,6 +688,19 @@ cmp.setup {
     { name = 'luasnip' },
   },
 }
+-- disable autocompletion in .tex files
+vim.api.nvim_create_autocmd("FileType", {
+   pattern = "plaintex",
+   callback = function()
+      require("cmp").setup.buffer { enabled = false }
+   end,
+})
+vim.api.nvim_create_autocmd("FileType", {
+   pattern = "tex",
+   callback = function()
+      require("cmp").setup.buffer { enabled = false }
+   end,
+})
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
